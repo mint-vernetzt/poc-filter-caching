@@ -1,0 +1,41 @@
+version: '3.9'
+
+networks:
+  default:
+    external: true
+    name: facet
+
+services:
+  postgres:
+    image: postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - ${POSTGRES_PORT}:5432
+    volumes:
+      - postgres:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    volumes:
+      - pgadmin:/root/.pgadmin
+    links:
+      - postgres
+    env_file:
+      - .env
+    labels:
+      - "traefik.docker.network=facet"
+      - "traefik.enable=true"
+      - "traefik.http.routers.facet-db-http.rule=Host(`${DB_HOST}`)"
+      - "traefik.http.routers.facet-db-http.entrypoints=http"
+      - "traefik.http.routers.facet-db-https.rule=Host(`${DB_HOST}`)"
+      - "traefik.http.routers.facet-db-https.entrypoints=https"
+      - "traefik.http.routers.facet-db-https.tls=true"
+      - "traefik.http.routers.facet-db-http.middlewares=redirect@file"
+
+volumes:
+  pgadmin:
+    driver: local
+  postgres:
+    driver: local

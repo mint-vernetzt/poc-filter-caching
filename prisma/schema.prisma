@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("LOCAL_DATABASE_URL")
+}
+
+model Project {
+  id                           String                             @id @default(uuid())
+  slug                         String                             @unique
+  name                         String
+  subline                      String?
+  headline                     String?
+  excerpt                      String?
+  createdAt                    DateTime                           @default(now()) @map("created_at")
+  updatedAt                    DateTime                           @default(now()) @updatedAt @map("updated_at")
+  published                    Boolean                            @default(false)
+  city                         String?
+
+  formats                      FormatOfProject[]
+  furtherFormats               String[]                           @map("further_formats")
+
+  disciplines                  DisciplineOfProject[]
+  furtherDisciplines           String[]                           @map("further_disciplines")
+  additionalDisciplines        AdditionalDisciplineOfProject[]
+
+  tsv                          Unsupported("tsvector")?
+  @@index([tsv])
+
+  @@map("projects")
+}
+
+model Discipline {
+  id          String                @id @default(uuid())
+  referenceId Int                   @unique
+  title       String                @unique
+  slug        String                @unique
+  projects    DisciplineOfProject[]
+
+  @@map("disciplines")
+}
+
+model AdditionalDiscipline {
+  id       String                          @id @default(uuid())
+  title    String                          @unique
+  slug     String                          @unique
+  projects AdditionalDisciplineOfProject[]
+
+  @@map("additional_disciplines")
+}
+
+
+model FormatOfProject {
+  formatId  String   @map("format_id")
+  projectId String   @map("project_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  format    Format   @relation(fields: [formatId], references: [id], onDelete: Cascade)
+
+  @@id([formatId, projectId])
+  @@map("formats_of_projects")
+}
+
+model DisciplineOfProject {
+  disciplineId String     @map("discipline_id")
+  projectId    String     @map("project_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([disciplineId, projectId])
+  @@map("disciplines_of_projects")
+}
+
+model AdditionalDisciplineOfProject {
+  additionalDisciplineId String               @map("additional_discipline_id")
+  projectId              String               @map("project_id")
+  createdAt              DateTime             @default(now()) @map("created_at")
+  additionalDiscipline   AdditionalDiscipline @relation(fields: [additionalDisciplineId], references: [id], onDelete: Cascade)
+  project                Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([additionalDisciplineId, projectId])
+  @@map("additional_disciplines_of_projects")
+}
+
+model Format {
+  id       String            @id @default(uuid())
+  title    String            @unique
+  projects FormatOfProject[]
+
+  @@map("formats")
+}
